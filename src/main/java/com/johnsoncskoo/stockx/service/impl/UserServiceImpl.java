@@ -33,20 +33,20 @@ public class UserServiceImpl implements UserService {
                 throw new InvalidUsernameException("Username already exists");
             }
 
+            user = User.builder()
+                    .sessionId(sessionId)
+                    .username(request.getUsername())
+                    .build();
+
+            user = userRepository.save(user);
+
             var portfolio = Portfolio.builder()
+                    .user(user)
                     .balance(100_000.00)
                     .positions(new ArrayList<>())
                     .build();
 
             portfolio = portfolioRepository.save(portfolio);
-
-            user = User.builder()
-                    .sessionId(sessionId)
-                    .username(request.getUsername())
-                    .portfolio(portfolio)
-                    .build();
-
-            user = userRepository.save(user);
         }
 
         return new UserResponse(user.getId(), user.getUsername(), user.getSessionId());
@@ -60,5 +60,11 @@ public class UserServiceImpl implements UserService {
             throw SessionNotFoundException.toException(sessionId);
         }
         return user;
+    }
+
+    @Override
+    public boolean isUserLoggedIn(HttpSession session) {
+        var sessionId = session.getId();
+        return userRepository.existsBySessionId(sessionId);
     }
 }

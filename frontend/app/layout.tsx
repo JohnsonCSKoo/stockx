@@ -8,9 +8,8 @@ import Header from "@/components/header"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "TradeSim - Paper Trading Platform",
-  description: "A modern paper trading platform for simulated stock trading",
-    generator: 'v0.dev'
+  title: "StockX - Paper Trading Platform",
+  description: "A modern paper trading platform for simulated stock trading"
 }
 
 export default function RootLayout({

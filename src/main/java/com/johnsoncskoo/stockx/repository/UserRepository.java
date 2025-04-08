@@ -12,4 +12,6 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     User findBySessionId(String sessionId);
 
     boolean existsByUsernameIgnoreCase(@NotEmpty String username);
+
+    boolean existsBySessionId(String sessionId);
 }
