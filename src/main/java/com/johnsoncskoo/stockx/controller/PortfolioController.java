@@ -19,10 +19,9 @@ public class PortfolioController {
 
     @GetMapping("{id}")
     public ResponseEntity<PortfolioResponse> getUserPortfolio(
-            @PathVariable("id") final Long id
+            @PathVariable("id") final String id
     ) {
-        var httpSession = httpSessionFactory.getObject();
-        var portfolio = portfolioService.getPortfolio(httpSession);
+        var portfolio = portfolioService.getPortfolio(id);
 
         return ResponseEntity.ok(portfolio);
     }

@@ -7,6 +7,6 @@ import jakarta.servlet.http.HttpSession;
 
 public interface UserService {
     UserResponse createUser(HttpSession session, CreateUserRequest request);
-    User getUser(HttpSession session);
-    boolean isUserLoggedIn(HttpSession session);
+    User getUser(String sessionId);
+    boolean isUserLoggedIn(String sessionId);
 }

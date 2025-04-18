@@ -33,12 +33,12 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public PortfolioResponse getPortfolio(HttpSession httpSession) {
-        if (!userService.isUserLoggedIn(httpSession)) {
-            throw SessionNotFoundException.toException(httpSession.getId());
+    public PortfolioResponse getPortfolio(String sessionId) {
+        if (!userService.isUserLoggedIn(sessionId)) {
+            throw SessionNotFoundException.toException(String.valueOf(sessionId));
         }
 
-        var user = userService.getUser(httpSession);
+        var user = userService.getUser(sessionId);
         var portfolio = portfolioRepository.findByUser(user);
 
         if (portfolio == null) {

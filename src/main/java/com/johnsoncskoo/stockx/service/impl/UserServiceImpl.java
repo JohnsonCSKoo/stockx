@@ -53,8 +53,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUser(HttpSession session) {
-        var sessionId = session.getId();
+    public User getUser(String sessionId) {
         var user = userRepository.findBySessionId(sessionId);
         if (user == null) {
             throw SessionNotFoundException.toException(sessionId);
@@ -63,8 +62,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean isUserLoggedIn(HttpSession session) {
-        var sessionId = session.getId();
+    public boolean isUserLoggedIn(String sessionId) {
         return userRepository.existsBySessionId(sessionId);
     }
 }

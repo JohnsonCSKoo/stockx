@@ -27,11 +27,4 @@ public class Stock extends AuditableEntity {
             nullable = false
     )
     private String name;
-
-    @Column(
-            nullable = false
-    )
-    private double price;
-
-    
 }

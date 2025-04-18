@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import SearchBar from "@/components/search-bar"
-import {getCurrentUser, logoutUser} from "@/lib/actions"
+import {getCurrentUser, getPortfolio, logoutUser} from "@/lib/actions"
 
 interface User {
   id: string
@@ -35,7 +35,8 @@ export default function Header() {
       try {
         const response = await getCurrentUser();
         console.log(response);
-
+        const portfolio = await getPortfolio();
+        console.log(portfolio);
         if (response.username) {
           setIsLoggedIn(true);
 

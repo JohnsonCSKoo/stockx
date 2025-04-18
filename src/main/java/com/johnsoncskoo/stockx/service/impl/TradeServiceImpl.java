@@ -29,7 +29,7 @@ public class TradeServiceImpl implements TradeService {
 
     @Override
     public OrderResponse submitOrder(HttpSession session, OrderRequest request) {
-        var user = userService.getUser(session);
+        var user = userService.getUser(session.getId());
         var stock = stockRepository.findById(request.getStockId())
                 .orElseThrow(() -> ResourceNotFoundException.toException(Stock.class, request.getStockId()));
 

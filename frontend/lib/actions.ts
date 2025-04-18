@@ -1,8 +1,9 @@
 "use server"
 
 import { cookies } from "next/headers"
-import {CreateUserRequest} from "@/@types/user";
+import {CreateUserRequest, UserResponse} from "@/@types/user";
 import {createUser} from "@/api/userApi";
+import {getUserPortfolio} from "@/api/portfolioApi";
 
 /**
  * Creates a temporary account with the given username
@@ -61,4 +62,22 @@ export async function getCurrentUser() {
  */
 export async function logoutUser() {
     cookies().delete("user-session");
+}
+
+/**
+* Retrieves the portfolio of the current user
+*/
+export async function getPortfolio() {
+
+    const userCookie: UserResponse | null = await getCurrentUser();
+
+    if (userCookie !== null) {
+        await getUserPortfolio(userCookie.sessionId)
+            .then((response) => {
+                return response.data;
+            }).catch((error) => {
+                console.error("Error fetching portfolio:", error);
+                return null;
+            });
+    }
 }
