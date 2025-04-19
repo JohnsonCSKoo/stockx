@@ -146,7 +146,6 @@ public interface StockPriceHistoryRepository extends JpaRepository<StockPriceHis
             @Param("stockId") Long stockId,
             @Param("cutoffTime") LocalDateTime cutoffTime);
 
-    // Combined query that transparently uses the right data source based on age
     @Query(value = "SELECT * FROM (" +
             "SELECT time, stock_id, price, volume FROM stock_price_history " +
             "WHERE stock_id = :stockId AND time > :oneDayAgo " +
@@ -159,7 +158,7 @@ public interface StockPriceHistoryRepository extends JpaRepository<StockPriceHis
             ") combined_data " +
             "ORDER BY time ASC " +
             "LIMIT 2000", nativeQuery = true)
-    List<Object[]> findHistoricalDataWithCompression(
+    List<Object[]> findHistoricalData(
             @Param("stockId") Long stockId,
             @Param("oneDayAgo") LocalDateTime oneDayAgo,
             @Param("oneWeekAgo") LocalDateTime oneWeekAgo);

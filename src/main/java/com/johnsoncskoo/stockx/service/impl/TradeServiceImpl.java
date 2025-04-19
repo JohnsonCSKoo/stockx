@@ -9,7 +9,7 @@ import com.johnsoncskoo.stockx.repository.OrderRepository;
 import com.johnsoncskoo.stockx.repository.StockRepository;
 import com.johnsoncskoo.stockx.service.TradeService;
 import com.johnsoncskoo.stockx.service.UserService;
-import com.johnsoncskoo.stockx.service.dto.TradeEvent;
+import com.johnsoncskoo.stockx.dto.TradeEvent;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

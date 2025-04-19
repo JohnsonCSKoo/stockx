@@ -3,6 +3,8 @@ package com.johnsoncskoo.stockx.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @Builder
@@ -27,4 +29,10 @@ public class Stock extends AuditableEntity {
             nullable = false
     )
     private String name;
+
+    @Column(
+            name = "base_price",
+            nullable = false
+    )
+    private BigDecimal basePrice;
 }

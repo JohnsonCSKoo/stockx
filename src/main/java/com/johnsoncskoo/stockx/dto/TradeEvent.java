@@ -1,4 +1,4 @@
-package com.johnsoncskoo.stockx.service.dto;
+package com.johnsoncskoo.stockx.dto;
 
 import com.johnsoncskoo.stockx.model.OrderDirection;
 import com.johnsoncskoo.stockx.model.OrderType;
