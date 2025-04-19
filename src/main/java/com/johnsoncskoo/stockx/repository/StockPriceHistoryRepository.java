@@ -30,7 +30,8 @@ public interface StockPriceHistoryRepository extends JpaRepository<StockPriceHis
     @Query("SELECT new map(FUNCTION('date_trunc', 'day', s.time) as day, " +
             "MAX(s.price) as high, MIN(s.price) as low, " +
             "FIRST_VALUE(s.price) OVER (PARTITION BY FUNCTION('date_trunc', 'day', s.time) ORDER BY s.time) as open, " +
-            "LAST_VALUE(s.price) OVER (PARTITION BY FUNCTION('date_trunc', 'day', s.time) ORDER BY s.time) as close) " +
+            "LAST_VALUE(s.price) OVER (PARTITION BY FUNCTION('date_trunc', 'day', s.time) ORDER BY s.time) as close, " +
+            "(SELECT sp.price FROM StockPriceHistory sp WHERE sp.time = MAX(s.time) AND sp.stock = s.stock) as currentPrice) " +
             "FROM StockPriceHistory s WHERE s.stock = :stock AND s.time BETWEEN :startDate AND :endDate " +
             "GROUP BY FUNCTION('date_trunc', 'day', s.time) ORDER BY day")
     List<Object> findDailyOHLC(@Param("stock") Stock stock,

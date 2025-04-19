@@ -1,31 +1,34 @@
 package com.johnsoncskoo.stockx.service.impl;
 
+import com.johnsoncskoo.stockx.dto.DashboardStockDto;
+import com.johnsoncskoo.stockx.dto.DashboardStockUpdateDto;
 import com.johnsoncskoo.stockx.dto.StockPriceHistoryCache;
+import com.johnsoncskoo.stockx.dto.StockUpdateDto;
 import com.johnsoncskoo.stockx.model.Stock;
 import com.johnsoncskoo.stockx.model.StockPriceHistory;
 import com.johnsoncskoo.stockx.repository.StockPriceHistoryRepository;
 import com.johnsoncskoo.stockx.repository.StockRepository;
-import com.johnsoncskoo.stockx.service.StockDataGeneratorService;
-import lombok.Builder;
+import com.johnsoncskoo.stockx.service.StockDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
-public class StockDataGeneratorServiceImpl implements StockDataGeneratorService {
+public class StockDataServiceImpl implements StockDataService {
     private final StockRepository stockRepository;
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
     private final Random random = new Random();
 
     private static final String STOCK_TICKS_KEY = "stock:ticks:%d";
@@ -35,6 +38,7 @@ public class StockDataGeneratorServiceImpl implements StockDataGeneratorService 
         var now = LocalDateTime.now();
 
         var priceHistoryList = new ArrayList<StockPriceHistory>();
+        var stockUpdateList = new ArrayList<StockUpdateDto>();
 
         for (var stock : stocks) {
 
@@ -76,9 +80,73 @@ public class StockDataGeneratorServiceImpl implements StockDataGeneratorService 
                     .volume(100_000L)   // random-ify volume if needed in the future
                     .build();
             priceHistoryList.add(stockPriceHistory);
+
+            // add stock update to list
+            var stockUpdate = StockUpdateDto.builder()
+                    .stockId(stock.getId())
+                    .price(changes.getLatestPrice())
+                    .time(now)
+                    .build();
+            stockUpdateList.add(stockUpdate);
         }
 
         stockPriceHistoryRepository.saveAll(priceHistoryList);
+
+        // push stock updates to WS clients
+        stockUpdateList.forEach(update ->
+                messagingTemplate.convertAndSend("/topic/stock/" + update.getStockId(), update));
+        messagingTemplate.convertAndSend("/topic/stocks/", stockUpdateList);
+    }
+
+    @Override
+    public void getDashboardHCOLData() {
+        var stocks = stockRepository.findAll();
+        var now = LocalDateTime.now();
+        var startOfYesterday = LocalDateTime.now()
+                .minusDays(1)
+                .toLocalDate()
+                .atStartOfDay();
+        var startOfToday = LocalDateTime.now()
+                .toLocalDate()
+                .atStartOfDay();
+
+        var stockUpdateList = new ArrayList<DashboardStockDto>();
+
+        // calculate HCOL and price change of each stock
+        for (var stock : stocks) {
+            var dailyHCOL = stockPriceHistoryRepository.findDailyOHLC(
+                    stock, startOfYesterday, startOfToday);
+
+            if (dailyHCOL == null || dailyHCOL.isEmpty()) {
+                continue;
+            }
+
+            var stockUpdate = DashboardStockDto.builder()
+                    .stockId(stock.getId())
+                    .lastUpdatedAt(now)
+                    .high((BigDecimal) dailyHCOL.get(1))
+                    .low((BigDecimal) dailyHCOL.get(2))
+                    .open((BigDecimal) dailyHCOL.get(3))
+                    .close((BigDecimal) dailyHCOL.get(4))
+                    .price((BigDecimal) dailyHCOL.get(5))
+                    .build();
+
+            var priceChange = stockUpdate.getPrice().subtract(stockUpdate.getClose());
+            var priceChangePercentage = BigDecimal.ZERO;
+
+            if (stockUpdate.getClose().compareTo(BigDecimal.ZERO) != 0) {
+                priceChangePercentage = priceChange
+                        .divide(stockUpdate.getClose(), 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100));
+            }
+            stockUpdate.setPriceChange(priceChange);
+            stockUpdate.setPriceChangePercentage(priceChangePercentage);
+            stockUpdateList.add(stockUpdate);
+        }
+
+        // push daily stock HCOL data to WS clients
+        messagingTemplate.convertAndSend("/topic/dashboard/",
+                DashboardStockUpdateDto.builder().stocks(stockUpdateList).build());
     }
 
     private StockPriceHistoryCache calculatePriceChange(Stock stock, BigDecimal latestPrice, int movementCount, int ticksElapsed) {

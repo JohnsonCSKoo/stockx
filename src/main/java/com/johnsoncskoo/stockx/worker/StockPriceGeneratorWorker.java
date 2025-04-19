@@ -1,6 +1,6 @@
 package com.johnsoncskoo.stockx.worker;
 
-import com.johnsoncskoo.stockx.service.StockDataGeneratorService;
+import com.johnsoncskoo.stockx.service.StockDataService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -15,13 +15,16 @@ import java.util.concurrent.TimeUnit;
 public class StockPriceGeneratorWorker {
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(1);
-    private final StockDataGeneratorService stockDataGeneratorService;
+    private final StockDataService stockDataService;
 
     @PostConstruct
     public void startScheduler() {
         scheduler.scheduleAtFixedRate(
-                stockDataGeneratorService::generateStockData,
+                stockDataService::generateStockData,
                 0, 5, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(
+                stockDataService::getDashboardHCOLData,
+                0, 10, TimeUnit.SECONDS);
     }
 
     @PreDestroy
