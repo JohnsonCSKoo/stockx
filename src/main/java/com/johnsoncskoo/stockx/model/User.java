@@ -26,14 +26,24 @@ public class User extends AuditableEntity {
     private String username;
 
     @Column(
-            name = "session_id",
-            unique = true
+            unique = true,
+            nullable = false
     )
-    private String sessionId;
+    private String token;
 
     @OneToOne(
             mappedBy = "user",
             cascade = CascadeType.ALL
     )
     private Portfolio portfolio;
+
+    @Column(
+            name = "expires_at",
+            unique = true
+    )
+    private LocalDateTime expiresAt;
+
+    public boolean isExpired() {
+        return expiresAt != null && expiresAt.isBefore(LocalDateTime.now());
+    }
 }

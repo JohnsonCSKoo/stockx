@@ -9,7 +9,6 @@ import com.johnsoncskoo.stockx.model.Position;
 import com.johnsoncskoo.stockx.repository.PortfolioRepository;
 import com.johnsoncskoo.stockx.service.PortfolioService;
 import com.johnsoncskoo.stockx.service.UserService;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,12 +32,12 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public PortfolioResponse getPortfolio(String sessionId) {
-        if (!userService.isUserLoggedIn(sessionId)) {
-            throw SessionNotFoundException.toException(String.valueOf(sessionId));
+    public PortfolioResponse getPortfolio(String token) {
+        if (!userService.isUserValid(token)) {
+            throw SessionNotFoundException.toException(String.valueOf(token));
         }
 
-        var user = userService.getUser(sessionId);
+        var user = userService.getUser(token);
         var portfolio = portfolioRepository.findByUser(user);
 
         if (portfolio == null) {

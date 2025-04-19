@@ -9,9 +9,9 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Integer> {
-    User findBySessionId(String sessionId);
+    User findByToken(String token);
 
     boolean existsByUsernameIgnoreCase(@NotEmpty String username);
 
-    boolean existsBySessionId(String sessionId);
+    boolean existsByToken(String token);
 }

@@ -4,5 +4,5 @@ import com.johnsoncskoo.stockx.dto.PortfolioResponse;
 import jakarta.servlet.http.HttpSession;
 
 public interface PortfolioService {
-    PortfolioResponse getPortfolio(String sessionId);
+    PortfolioResponse getPortfolio(String token);
 }

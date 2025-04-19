@@ -2,6 +2,8 @@ package com.johnsoncskoo.stockx.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Builder
@@ -10,5 +12,6 @@ import lombok.*;
 public class UserResponse {
     private long id;
     private String username;
-    private String sessionId;
+    private String token;
+    private LocalDateTime expiresAt;
 }

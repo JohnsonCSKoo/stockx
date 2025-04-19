@@ -24,9 +24,18 @@ public class UserController {
     public ResponseEntity<UserResponse> createUser(
             @RequestBody @Validated final CreateUserRequest userRequest
     ) {
-        var httpSession = httpSessionFactory.getObject();
-        var response = userService.createUser(httpSession, userRequest);
+        var response = userService.createUser(userRequest);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<UserResponse> validateToken(@RequestParam String token) {
+        if (userService.isUserValid(token)) {
+            var user = userService.getUserDto(token);
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
