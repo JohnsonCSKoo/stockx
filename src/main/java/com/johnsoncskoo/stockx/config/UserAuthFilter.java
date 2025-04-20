@@ -15,7 +15,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class UserAuthFilter extends OncePerRequestFilter {
 
-    private UserService userService;
+    private final UserService userService;
 
 
     @Override

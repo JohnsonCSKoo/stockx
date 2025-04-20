@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final ObjectFactory<HttpSession> httpSessionFactory;
     private final UserService userService;
 
     @PostMapping("/create")

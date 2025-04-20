@@ -5,5 +5,6 @@ export interface CreateUserRequest {
 export interface UserResponse {
     id: number;
     username: string;
-    sessionId: string;
+    token: string;
+    expiresAt: Date;
 }

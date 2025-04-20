@@ -35,16 +35,20 @@ export default function Header() {
       try {
         const response = await getCurrentUser();
         console.log(response);
-        const portfolio = await getPortfolio();
-        console.log(portfolio);
-        if (response.username) {
+
+        if (response.username && new Date(response.expiresAt) > new Date()) {
           setIsLoggedIn(true);
 
 
-          setUser(data.user)
+          setUser({
+            id: response.id,
+            username: response.username,
+            // balance: response.balance,
+          });
+
           setBalance(
-              `$${data.user.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          )
+              `$100,000.00`,
+          );
         } else {
           setIsLoggedIn(false)
           setUser(null)

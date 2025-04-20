@@ -28,7 +28,7 @@ export async function createTemporaryAccount(username: string) {
                 value: JSON.stringify(data),
                 httpOnly: true,
                 path: "/",
-                maxAge: 60 * 60 * 24 * 30, // 30 days
+                maxAge: 60 * 60 * 24, // 24 hours
             })
             console.log("User created successfully:", response.data);
 
