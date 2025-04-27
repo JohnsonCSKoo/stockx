@@ -8,9 +8,13 @@ import com.johnsoncskoo.stockx.model.*;
 import com.johnsoncskoo.stockx.repository.*;
 import com.johnsoncskoo.stockx.service.TradeService;
 import com.johnsoncskoo.stockx.service.UserService;
+import com.johnsoncskoo.stockx.specification.OrderSpecification;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,8 +24,8 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class TradeServiceImpl implements TradeService {
-    private final PortfolioRepository portfolioRepository;
 
+    private final PortfolioRepository portfolioRepository;
     private final OrderRepository orderRepository;
     private final StockRepository stockRepository;
     private final PositionRepository positionRepository;
@@ -125,6 +129,43 @@ public class TradeServiceImpl implements TradeService {
             order.setStatus(OrderStatus.COMPLETED);
             orderRepository.save(order);
         }
+    }
+
+    @Override
+    public Page<OrderResponse> getOrders(
+            String token,
+            PageRequest pageable,
+            String filter
+    ) {
+        var user = userService.getUser(token);
+
+        Page<Order> orders;
+
+        if (filter == null || filter.trim().isEmpty()) {
+            orders = orderRepository.findAllByUser(user, pageable);
+        }
+        else {
+            Specification<Order> specification = (root, query, cb) ->
+                    cb.equal(root.get("user"), user);
+
+            orders = orderRepository.findAll(
+                    specification.and(OrderSpecification.matchesFilter(filter)),
+                    pageable
+            );
+        }
+
+        return orders.map(order -> OrderResponse.builder()
+                .id(order.getId())
+                .symbol(order.getStock().getSymbol())
+                .quantity(order.getQuantity())
+                .limitPrice(order.getLimitPrice())
+                .executedAt(order.getExecutedAt())
+                .executedPrice(order.getExecutedPrice())
+                .status(order.getStatus())
+                .type(order.getType())
+                .direction(order.getDirection())
+                .createdAt(order.getCreatedAt())
+                .build());
     }
 
     private void executeOrder(BigDecimal stockPrice, Order order, Portfolio portfolio, Stock stock) {

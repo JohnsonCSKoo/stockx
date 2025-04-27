@@ -1,105 +1,50 @@
 "use client"
 
-import { useState } from "react"
+import {useEffect, useState} from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { DataTable } from "@/components/ui/data-table"
+import {PagedRequest} from "@/@types/common";
+import {getOrders} from "@/api/tradeApi";
 
-// Mock transaction data
-const transactions = [
-  {
-    id: "tx-001",
-    symbol: "AAPL",
-    type: "buy",
-    quantity: 5,
-    price: 175.25,
-    timestamp: "2023-04-05T14:30:00Z",
-    status: "completed",
-  },
-  {
-    id: "tx-002",
-    symbol: "MSFT",
-    type: "buy",
-    quantity: 3,
-    price: 325.1,
-    timestamp: "2023-04-05T15:45:00Z",
-    status: "completed",
-  },
-  {
-    id: "tx-003",
-    symbol: "AAPL",
-    type: "buy",
-    quantity: 5,
-    price: 178.5,
-    timestamp: "2023-04-06T10:15:00Z",
-    status: "completed",
-  },
-  {
-    id: "tx-004",
-    symbol: "AMZN",
-    type: "buy",
-    quantity: 8,
-    price: 135.5,
-    timestamp: "2023-04-07T09:30:00Z",
-    status: "completed",
-  },
-  {
-    id: "tx-005",
-    symbol: "GOOGL",
-    type: "buy",
-    quantity: 3,
-    price: 125.75,
-    timestamp: "2023-04-10T11:20:00Z",
-    status: "completed",
-  },
-  {
-    id: "tx-006",
-    symbol: "MSFT",
-    type: "buy",
-    quantity: 2,
-    price: 312.6,
-    timestamp: "2023-04-12T13:45:00Z",
-    status: "completed",
-  },
-  {
-    id: "tx-007",
-    symbol: "META",
-    type: "buy",
-    quantity: 4,
-    price: 310.2,
-    timestamp: "2023-04-15T10:05:00Z",
-    status: "completed",
-  },
-  {
-    id: "tx-008",
-    symbol: "TSLA",
-    type: "buy",
-    quantity: 6,
-    price: 190.3,
-    timestamp: "2023-04-18T14:25:00Z",
-    status: "completed",
-  },
-  {
-    id: "tx-009",
-    symbol: "NFLX",
-    type: "buy",
-    quantity: 2,
-    price: 450.15,
-    timestamp: "2023-04-20T15:30:00Z",
-    status: "completed",
-  },
-  {
-    id: "tx-010",
-    symbol: "TSLA",
-    type: "sell",
-    quantity: 2,
-    price: 177.67,
-    timestamp: "2023-04-25T09:45:00Z",
-    status: "pending",
-  },
-]
+// Generate more mock transaction data
+const generateTransactions = (count: number) => {
+  const symbols = ["AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "NFLX", "NVDA", "AMD", "INTC"]
+  const types = ["buy", "sell"]
+  const statuses = ["completed", "pending"]
+
+  const transactions = []
+
+  for (let i = 1; i <= count; i++) {
+    const symbol = symbols[Math.floor(Math.random() * symbols.length)]
+    const type = types[Math.floor(Math.random() * types.length)]
+    const quantity = Math.floor(Math.random() * 10) + 1
+    const price = Number.parseFloat((Math.random() * 500 + 50).toFixed(2))
+
+    // Generate a random date within the last 30 days
+    const date = new Date()
+    date.setDate(date.getDate() - Math.floor(Math.random() * 30))
+
+    transactions.push({
+      id: `tx-${i.toString().padStart(3, "0")}`,
+      symbol,
+      type,
+      quantity,
+      price,
+      timestamp: date.toISOString(),
+      status: i <= 5 ? "pending" : "completed", // Make the first 5 pending
+    })
+  }
+
+  // Sort by timestamp, newest first
+  return transactions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+}
+
+// Generate 50 transactions
+const transactions = generateTransactions(50)
 
 export default function TransactionsPage() {
   const [activeTab, setActiveTab] = useState("all")
@@ -111,97 +56,131 @@ export default function TransactionsPage() {
     return true
   })
 
+  useEffect (() => {
+    const searchParams: PagedRequest = {
+      page: 0,
+      size: 10,
+      sortBy: "createdAt",
+      direction: "desc",
+      filter: "pending"
+    };
+
+    getOrders(searchParams).then(response => console.log(response))
+        .catch(error => console.error("Error fetching orders:", error));
+  }, []);
+
+  // Define columns for the data table
+  const columns = [
+    {
+      key: "timestamp",
+      header: "Date",
+      sortable: true,
+      cell: (tx: any) => (
+          <div>
+            {new Date(tx.timestamp).toLocaleDateString()}
+            <div className="text-sm text-muted-foreground">{new Date(tx.timestamp).toLocaleTimeString()}</div>
+          </div>
+      ),
+    },
+    {
+      key: "symbol",
+      header: "Symbol",
+      sortable: true,
+      cell: (tx: any) => (
+          <Link href={`/stock/${tx.symbol}`} className="font-medium hover:underline">
+            {tx.symbol}
+          </Link>
+      ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      sortable: true,
+      cell: (tx: any) => (
+          <Badge variant={tx.type === "buy" ? "default" : "secondary"}>{tx.type === "buy" ? "Buy" : "Sell"}</Badge>
+      ),
+    },
+    {
+      key: "quantity",
+      header: "Quantity",
+      sortable: true,
+      cell: (tx: any) => <div className="text-right">{tx.quantity}</div>,
+    },
+    {
+      key: "price",
+      header: "Price",
+      sortable: true,
+      cell: (tx: any) => <div className="text-right">${tx.price.toFixed(2)}</div>,
+    },
+    {
+      key: "total",
+      header: "Total",
+      sortable: true,
+      cell: (tx: any) => <div className="text-right font-medium">${(tx.quantity * tx.price).toFixed(2)}</div>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      cell: (tx: any) => (
+          <div className="text-right">
+            <Badge variant={tx.status === "completed" ? "outline" : "secondary"}>
+              {tx.status === "completed" ? "Completed" : "Pending"}
+            </Badge>
+          </div>
+      ),
+    },
+  ]
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>View all your trading activity</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="all" onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-              </TabsList>
-              <TabsContent value="all" className="mt-0">
-                <TransactionTable transactions={filteredTransactions} />
-              </TabsContent>
-              <TabsContent value="pending" className="mt-0">
-                <TransactionTable transactions={filteredTransactions} />
-              </TabsContent>
-              <TabsContent value="completed" className="mt-0">
-                <TransactionTable transactions={filteredTransactions} />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </div>
+      <div className="container mx-auto px-4 py-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <Card>
+            <CardHeader>
+              <CardTitle>Transaction History</CardTitle>
+              <CardDescription>View all your trading activity</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="all" onValueChange={setActiveTab}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="pending">Pending</TabsTrigger>
+                  <TabsTrigger value="completed">Completed</TabsTrigger>
+                </TabsList>
+                <TabsContent value="all" className="mt-0">
+                  <DataTable
+                      data={filteredTransactions}
+                      columns={columns}
+                      defaultSortKey="timestamp"
+                      defaultSortDir="desc"
+                      searchPlaceholder="Search transactions..."
+                      renderEmpty={() => <div>No transactions found for the selected filter.</div>}
+                  />
+                </TabsContent>
+                <TabsContent value="pending" className="mt-0">
+                  <DataTable
+                      data={filteredTransactions}
+                      columns={columns}
+                      defaultSortKey="timestamp"
+                      defaultSortDir="desc"
+                      searchPlaceholder="Search pending transactions..."
+                      renderEmpty={() => <div>No pending transactions found.</div>}
+                  />
+                </TabsContent>
+                <TabsContent value="completed" className="mt-0">
+                  <DataTable
+                      data={filteredTransactions}
+                      columns={columns}
+                      defaultSortKey="timestamp"
+                      defaultSortDir="desc"
+                      searchPlaceholder="Search completed transactions..."
+                      renderEmpty={() => <div>No completed transactions found.</div>}
+                  />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
   )
 }
-
-function TransactionTable({ transactions }: { transactions: any[] }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left py-3 px-4">Date</th>
-            <th className="text-left py-3 px-4">Symbol</th>
-            <th className="text-left py-3 px-4">Type</th>
-            <th className="text-right py-3 px-4">Quantity</th>
-            <th className="text-right py-3 px-4">Price</th>
-            <th className="text-right py-3 px-4">Total</th>
-            <th className="text-right py-3 px-4">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {transactions.length === 0 ? (
-            <tr>
-              <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                No transactions found
-              </td>
-            </tr>
-          ) : (
-            transactions.map((tx, index) => (
-              <motion.tr
-                key={tx.id}
-                className="border-b"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <td className="py-4 px-4">
-                  {new Date(tx.timestamp).toLocaleDateString()}
-                  <div className="text-sm text-muted-foreground">{new Date(tx.timestamp).toLocaleTimeString()}</div>
-                </td>
-                <td className="py-4 px-4">
-                  <Link href={`/stock/${tx.symbol}`} className="font-medium hover:underline">
-                    {tx.symbol}
-                  </Link>
-                </td>
-                <td className="py-4 px-4">
-                  <Badge variant={tx.type === "buy" ? "default" : "secondary"}>
-                    {tx.type === "buy" ? "Buy" : "Sell"}
-                  </Badge>
-                </td>
-                <td className="py-4 px-4 text-right">{tx.quantity}</td>
-                <td className="py-4 px-4 text-right">${tx.price.toFixed(2)}</td>
-                <td className="py-4 px-4 text-right font-medium">${(tx.quantity * tx.price).toFixed(2)}</td>
-                <td className="py-4 px-4 text-right">
-                  <Badge variant={tx.status === "completed" ? "outline" : "secondary"}>
-                    {tx.status === "completed" ? "Completed" : "Pending"}
-                  </Badge>
-                </td>
-              </motion.tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
