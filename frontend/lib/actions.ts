@@ -58,6 +58,17 @@ export async function getCurrentUser() {
 }
 
 /**
+ * Gets the bearer token of the current user session
+ */
+export async function getToken() {
+    const cookie = await getCurrentUser();
+    if (cookie) {
+        return cookie.token;
+    }
+    return null;
+}
+
+/**
  * Logs out the current user by removing the session cookie
  */
 export async function logoutUser() {

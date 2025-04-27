@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <!-- Silence Hibernate SQL logs -->
+    <logger name="org.hibernate.SQL" level="OFF"/>
+    <logger name="org.hibernate.type.descriptor.sql" level="OFF"/>
+    <logger name="org.hibernate.engine.jdbc.spi.SqlExceptionHelper" level="OFF"/>
+    <logger name="org.hibernate.engine.jdbc.batch.internal.BatchingBatch" level="OFF"/>
+
+    <!-- Silence transaction logs if needed -->
+    <logger name="org.hibernate.engine.transaction" level="OFF"/>
+
+    <!-- Silence JPA logs -->
+    <logger name="org.springframework.orm.jpa" level="OFF"/>
+    <logger name="org.springframework.transaction" level="OFF"/>
+</configuration>

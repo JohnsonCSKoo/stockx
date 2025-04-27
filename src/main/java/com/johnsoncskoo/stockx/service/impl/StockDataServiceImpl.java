@@ -10,6 +10,7 @@ import com.johnsoncskoo.stockx.repository.StockPriceHistoryRepository;
 import com.johnsoncskoo.stockx.repository.StockRepository;
 import com.johnsoncskoo.stockx.service.StockDataService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class StockDataServiceImpl implements StockDataService {
     private final StockRepository stockRepository;
@@ -236,7 +238,14 @@ public class StockDataServiceImpl implements StockDataService {
 
     private StockPriceHistoryCache getCachedStockPriceHistory(long stockId) {
         var key = String.format(STOCK_TICKS_KEY, stockId);
-        Object value = redisTemplate.opsForValue().get(key);
+        Object value;
+
+        try {
+            value = redisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            log.error("Error retrieving stock price history from Redis", e);
+            return null;
+        }
         if (value == null) {
             return null;
         }
@@ -245,11 +254,21 @@ public class StockDataServiceImpl implements StockDataService {
 
     private void storeStockPriceHistoryInCache(long stockId, StockPriceHistoryCache stockPriceHistoryCache) {
         var key = String.format(STOCK_TICKS_KEY, stockId);
-        redisTemplate.opsForValue().set(key, stockPriceHistoryCache, Duration.ofHours(1));
+
+        try {
+            redisTemplate.opsForValue().set(key, stockPriceHistoryCache, Duration.ofHours(1));
+        } catch (Exception e) {
+            log.error("Error storing stock price history to Redis", e);
+        }
     }
 
     private void removeStockPriceHistoryFromCache(long stockId) {
         var key = String.format(STOCK_TICKS_KEY, stockId);
-        redisTemplate.delete(key);
+
+        try {
+            redisTemplate.delete(key);
+        } catch (Exception e) {
+            log.error("Error deleting stock price history from Redis", e);
+        }
     }
 }

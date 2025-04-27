@@ -10,7 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderRequest {
-    private long stockId;
+    private String symbol;
     private int quantity;
     private double limitPrice;
     private OrderDirection direction;

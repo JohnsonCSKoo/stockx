@@ -5,5 +5,6 @@ import com.johnsoncskoo.stockx.dto.OrderResponse;
 import jakarta.servlet.http.HttpSession;
 
 public interface TradeService {
-    OrderResponse submitOrder(HttpSession session, OrderRequest request);
+    OrderResponse submitOrder(String token, OrderRequest request);
+    void processTradeEvents();
 }

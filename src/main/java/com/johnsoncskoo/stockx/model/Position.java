@@ -1,13 +1,11 @@
 package com.johnsoncskoo.stockx.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -34,5 +32,5 @@ public class Position extends AuditableEntity {
 
     private int quantity;
 
-    private int averageCost;
+    private double averageCost;
 }

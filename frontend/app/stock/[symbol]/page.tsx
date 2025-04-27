@@ -1,19 +1,20 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { ArrowDown, ArrowUp, X, ChevronRight, BarChart2, LineChart } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
-import { cn } from "@/lib/utils"
-import StockChart from "@/components/stock-chart"
+import type React from "react";
+import {useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import {AnimatePresence, motion} from "framer-motion";
+import {ArrowDown, ArrowUp, BarChart2, ChevronRight, LineChart, X} from "lucide-react";
+import {Card, CardContent} from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
+import {Separator} from "@/components/ui/separator";
+import {cn} from "@/lib/utils";
+import StockChart from "@/components/stock-chart";
+import {OrderDirection, OrderRequest, OrderType} from "@/@types/order";
+import {placeOrder} from "@/api/tradeApi";
 
 // Mock data for the stock
 const stockData = {
@@ -76,13 +77,13 @@ export default function StockPage() {
   const [prevPrice, setPrevPrice] = useState(0)
   const [highlight, setHighlight] = useState<"none" | "up" | "down">("none")
   const [showTrade, setShowTrade] = useState(false)
-  const [tradeType, setTradeType] = useState<"buy" | "sell">("buy")
+  const [tradeType, setTradeType] = useState<OrderDirection>(OrderDirection.BUY)
   const [timeframe, setTimeframe] = useState("1d")
   const [chartType, setChartType] = useState<"line" | "candle">("line")
 
   useEffect(() => {
     // Get stock data based on symbol
-    if (symbol && typeof symbol === "string" && stockData[symbol as keyof typeof stockData]) {
+    if (symbol && stockData[symbol as keyof typeof stockData]) {
       const data = stockData[symbol as keyof typeof stockData]
       setStock(data)
       setPrice(data.price)
@@ -295,7 +296,7 @@ export default function StockPage() {
                 <div className="flex gap-2">
                   <Button
                     onClick={() => {
-                      setTradeType("buy")
+                      setTradeType(OrderDirection.BUY)
                       setShowTrade(true)
                     }}
                     className="bg-green-600 hover:bg-green-700"
@@ -304,7 +305,7 @@ export default function StockPage() {
                   </Button>
                   <Button
                     onClick={() => {
-                      setTradeType("sell")
+                      setTradeType(OrderDirection.SELL)
                       setShowTrade(true)
                     }}
                     variant="destructive"
@@ -405,31 +406,45 @@ function TradePanel({
 }: {
   symbol: string
   price: number
-  type: "buy" | "sell"
+  type: OrderDirection
   owned: number
   onClose: () => void
 }) {
-  const [quantity, setQuantity] = useState(type === "sell" ? owned : 1)
-  const [orderType, setOrderType] = useState("market")
-  const [limitPrice, setLimitPrice] = useState(price.toFixed(2))
+  const [quantity, setQuantity] = useState(type === OrderDirection.SELL ? owned : 1)
+  const [orderType, setOrderType] = useState<OrderType>(OrderType.MARKET)
+  const [limitPrice, setLimitPrice] = useState<number>(price)
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number.parseInt(e.target.value)
     if (isNaN(value) || value < 1) {
       setQuantity(1)
-    } else if (type === "sell" && value > owned) {
+    } else if (type === OrderDirection.SELL && value > owned) {
       setQuantity(owned)
     } else {
       setQuantity(value)
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     // Here you would handle the trade submission
-    alert(
-      `${type === "buy" ? "Bought" : "Sold"} ${quantity} shares of ${symbol} at $${orderType === "market" ? price.toFixed(2) : limitPrice}`,
-    )
+    console.log(symbol, quantity, orderType, limitPrice);
+    const orderRequest: OrderRequest = {
+      symbol: symbol,
+      quantity: quantity,
+      limitPrice: limitPrice,
+      direction: type,
+      type: orderType
+    };
+
+    await placeOrder(orderRequest)
+        .then(response => {
+      console.log(response);
+    }).catch(error => console.error(error));
+
+    // alert(
+    //   `${type === OrderDirection.BUY ? "Bought" : "Sold"} ${quantity} shares of ${symbol} at $${orderType === OrderType.MARKET ? price.toFixed(2) : limitPrice}`,
+    // )
     onClose()
   }
 
@@ -452,7 +467,7 @@ function TradePanel({
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">
-              {type === "buy" ? "Buy" : "Sell"} {symbol}
+              {type === OrderDirection.BUY ? "Buy" : "Sell"} {symbol}
             </h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
@@ -468,7 +483,7 @@ function TradePanel({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <Label htmlFor="quantity">Quantity</Label>
-                {type === "sell" && (
+                {type === OrderDirection.SELL && (
                   <button type="button" className="text-sm text-primary" onClick={() => setQuantity(owned)}>
                     Sell All ({owned})
                   </button>
@@ -478,7 +493,7 @@ function TradePanel({
                 id="quantity"
                 type="number"
                 min={1}
-                max={type === "sell" ? owned : undefined}
+                max={type === OrderDirection.SELL ? owned : undefined}
                 value={quantity}
                 onChange={handleQuantityChange}
               />
@@ -486,19 +501,19 @@ function TradePanel({
 
             <div className="space-y-2">
               <Label>Order Type</Label>
-              <RadioGroup defaultValue="market" value={orderType} onValueChange={setOrderType}>
+              <RadioGroup defaultValue={OrderType.MARKET} value={orderType} onValueChange={setOrderType}>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="market" id="market" />
+                  <RadioGroupItem value={OrderType.MARKET} id="market" />
                   <Label htmlFor="market">Market Order</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="limit" id="limit" />
+                  <RadioGroupItem value={OrderType.LIMIT} id="limit" />
                   <Label htmlFor="limit">Limit Order</Label>
                 </div>
               </RadioGroup>
             </div>
 
-            {orderType === "limit" && (
+            {orderType === OrderType.LIMIT && (
               <div className="space-y-2">
                 <Label htmlFor="limit-price">Limit Price</Label>
                 <Input id="limit-price" value={limitPrice} onChange={(e) => setLimitPrice(e.target.value)} />
@@ -515,13 +530,13 @@ function TradePanel({
                   </div>
                   <div className="flex justify-between py-1">
                     <span>Price</span>
-                    <span>${orderType === "market" ? price.toFixed(2) : limitPrice}</span>
+                    <span>${orderType === OrderType.MARKET ? price.toFixed(2) : limitPrice}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between py-1 font-bold">
                     <span>Total</span>
                     <span>
-                      ${(quantity * (orderType === "market" ? price : Number.parseFloat(limitPrice))).toFixed(2)}
+                      ${(quantity * (orderType === OrderType.MARKET ? price : Number.parseFloat(limitPrice))).toFixed(2)}
                     </span>
                   </div>
                 </CardContent>
@@ -532,10 +547,10 @@ function TradePanel({
               type="submit"
               className={cn(
                 "w-full",
-                type === "buy" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700",
+                type === OrderDirection.BUY ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700",
               )}
             >
-              Confirm {type === "buy" ? "Purchase" : "Sale"}
+              Confirm {type === OrderDirection.BUY ? "Purchase" : "Sale"}
             </Button>
           </form>
         </div>

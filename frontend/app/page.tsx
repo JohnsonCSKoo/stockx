@@ -9,6 +9,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import {getDashboardStockUpdates} from "@/api/stockApi";
 
 // Mock data
 const topGainers = [
@@ -28,11 +29,11 @@ const topLosers = [
 ]
 
 const indexes = [
-  { symbol: "SPX", name: "S&P 500", price: 5021.84, change: 0.57 },
-  { symbol: "NDX", name: "Nasdaq 100", price: 17714.1, change: 0.82 },
-  { symbol: "DJI", name: "Dow Jones", price: 38671.69, change: 0.32 },
-  { symbol: "RUT", name: "Russell 2000", price: 1964.36, change: -0.21 },
-  { symbol: "VIX", name: "CBOE Volatility Index", price: 14.3, change: -3.51 },
+  { symbol: "SPX:IND", name: "S&P 500", price: 5021.84, change: 0.57 },
+  { symbol: "IXIC:IND", name: "Nasdaq Composite", price: 17714.1, change: 0.82 },
+  { symbol: "DJIA:IND", name: "Dow Jones", price: 38671.69, change: 0.32 },
+  { symbol: "RUT:IND", name: "Russell 2000", price: 1964.36, change: -0.21 },
+  { symbol: "VIX:IND", name: "CBOE Volatility Index", price: 14.3, change: -3.51 },
 ]
 
 const portfolio = [
@@ -45,41 +46,40 @@ export default function Dashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [prices, setPrices] = useState<Record<string, number>>({})
+  const [dashboardData, setDashboardData] = useState<any>({});
 
-  // Simulate loading state
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-      setIsLoggedIn(true)
-    }, 1500)
-    return () => clearTimeout(timer)
-  }, [])
+    getDashboardStockUpdates("Connecting to WebSocket...", data => {
+      setDashboardData(data);
+      console.log(dashboardData);
+    });
+  }, []);
 
-  // Simulate WebSocket price updates
-  useEffect(() => {
-    if (isLoading) return
-
-    const symbols = [...topGainers, ...topLosers, ...indexes].map((stock) => stock.symbol)
-    const initialPrices: Record<string, number> = {}
-    symbols.forEach((symbol) => {
-      const stock = [...topGainers, ...topLosers, ...indexes].find((s) => s.symbol === symbol)
-      if (stock) initialPrices[symbol] = stock.price
-    })
-    setPrices(initialPrices)
-
-    const interval = setInterval(() => {
-      setPrices((prev) => {
-        const newPrices = { ...prev }
-        const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)]
-        const currentPrice = newPrices[randomSymbol] || 100
-        const change = currentPrice * (Math.random() * 0.01 - 0.005) // -0.5% to +0.5%
-        newPrices[randomSymbol] = Number.parseFloat((currentPrice + change).toFixed(2))
-        return newPrices
-      })
-    }, 2000)
-
-    return () => clearInterval(interval)
-  }, [isLoading])
+  // // Simulate WebSocket price updates
+  // useEffect(() => {
+  //   if (isLoading) return
+  //
+  //   const symbols = [...topGainers, ...topLosers, ...indexes].map((stock) => stock.symbol)
+  //   const initialPrices: Record<string, number> = {}
+  //   symbols.forEach((symbol) => {
+  //     const stock = [...topGainers, ...topLosers, ...indexes].find((s) => s.symbol === symbol)
+  //     if (stock) initialPrices[symbol] = stock.price
+  //   })
+  //   setPrices(initialPrices)
+  //
+  //   const interval = setInterval(() => {
+  //     setPrices((prev) => {
+  //       const newPrices = { ...prev }
+  //       const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)]
+  //       const currentPrice = newPrices[randomSymbol] || 100
+  //       const change = currentPrice * (Math.random() * 0.01 - 0.005) // -0.5% to +0.5%
+  //       newPrices[randomSymbol] = Number.parseFloat((currentPrice + change).toFixed(2))
+  //       return newPrices
+  //     })
+  //   }, 2000)
+  //
+  //   return () => clearInterval(interval)
+  // }, [isLoading])
 
   const container = {
     hidden: { opacity: 0 },
